@@ -13,11 +13,7 @@ public class MyDatabaseHelper extends SQLiteOpenHelper {
     //黑名单
     //userId: 用户id
     //number: 加入黑名单号码
-    //type: 类型，是接听黑名单，还是短信黑名单-->0:接听 1:短信
-    public static final String CREATE_TABLE = "create table blacklist(" +
-            "userId integer," +
-            "number text," +
-            "type integer)";
+    public static final String CREATE_TABLE = "create table blacklist(userId integer,number text)";
 
     public static final String DATABASE = "blacklist.db";
     public static final int VERSION = 1;

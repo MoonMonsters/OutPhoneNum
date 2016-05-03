@@ -41,17 +41,15 @@ public class PhoneStateReceiver extends BroadcastReceiver {
      * 挂断电话
      */
     private void endCall() {
-        Log.d(TAG, "进入endCall()");
         Class<TelephonyManager> c = TelephonyManager.class;
         try {
             Method getITelephonyMethod = c.getDeclaredMethod("getITelephony", (Class[]) null);
             getITelephonyMethod.setAccessible(true);
             ITelephony iTelephony = null;
-            Log.e(TAG, "End call.");
             iTelephony = (ITelephony) getITelephonyMethod.invoke(tm, (Object[]) null);
             iTelephony.endCall();
         } catch (Exception e) {
-            Log.e(TAG, "Fail to answer ring call.", e);
+            e.printStackTrace();
         }
     }
 
@@ -87,19 +85,20 @@ public class PhoneStateReceiver extends BroadcastReceiver {
                     Log.d(TAG, "CALL_STATE_OFFHOOK");
                     break;
                 case TelephonyManager.CALL_STATE_RINGING:
-
                     MyDatabaseHelper helper = new MyDatabaseHelper(context);
                     SQLiteDatabase readableDatabase = helper.getReadableDatabase();
-                    Cursor cursor = readableDatabase.query("blacklist", null, "number=? and type = ?", new String[]{incomingNumber, String.valueOf(0)}, null, null, null);
+                    //从数据库中查询，判断该号码是否在黑名单中
+                    Cursor cursor = readableDatabase.query("blacklist", null, "number=?", new String[]{incomingNumber}, null, null, null);
 
-                    Log.d("TAG", "Cursor+phone: " + cursor.moveToFirst());
-
-                    if (cursor != null && cursor.moveToFirst()) {
+                    //如果存在
+                    if ( cursor.moveToFirst()) {
+                        //挂断
                         endCall();
 
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
+                                //延迟三秒删除该条通话记录
                                 try {
                                     Thread.sleep(3000);
                                 } catch (InterruptedException e) {
@@ -116,6 +115,7 @@ public class PhoneStateReceiver extends BroadcastReceiver {
                                     // for ActivityCompat#requestPermissions for more details.
                                     return;
                                 }
+                                //挂断该电话后，加入把通话记录删除掉
                                 Cursor c = resolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id"}, "number=? and (type=1 or type=3)", new String[]{incomingNumber}, "_id desc limit 1");
                                 if (c.moveToFirst()) {
                                     int id = c.getInt(0);
@@ -124,7 +124,6 @@ public class PhoneStateReceiver extends BroadcastReceiver {
                             }
                         }).start();
                     }
-                    Log.d("TAG", incomingNumber);
                     break;
             }
         }
